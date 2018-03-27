@@ -62,4 +62,11 @@ ggplot(aggregatedDataImputed, aes(interval, steps)) +
         facet_grid(dayType ~ .) +
         xlab("Interval of Day") + 
         ylab("Mean steps as per interval") +
-        ggtitle("average_daily_activity_pattern by weekdays and interval")
+        ggtitle("average_daily_activity_pattern by weekdays and interval")+ 
+        theme(panel.background = element_rect(fill = "white"))
+
+# using lattice plot
+xyplot(steps ~ interval | dayType,
+       data = aggregatedDataImputed,
+       layout = c(1, 2),
+       type = "l")

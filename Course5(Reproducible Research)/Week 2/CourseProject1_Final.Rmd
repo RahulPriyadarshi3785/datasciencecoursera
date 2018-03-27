@@ -1,11 +1,14 @@
 Reproducible Research: Peer Assessment 1
 ================================================================
-
+        
 ## Loading dependant packages
 ```{r, loading_dependant_packages}
+library(dplyr)
 library(ggplot2)
-library(scales)
+library(stats)
+library(lattice)
 library(Hmisc)
+library(scales)
 ```
 
 
@@ -29,6 +32,7 @@ if(!file.exists("activity.csv")){
 }
 
 df <- read.csv('activity.csv', sep = ',', header = TRUE, na.strings = NA, stringsAsFactors = FALSE)
+df1 <- tbl_df(df)
 ```
 
 ### 2. Process/transform the data (if necessary) into a format suitable for your  analysis
@@ -38,42 +42,50 @@ df <- read.csv('activity.csv', sep = ',', header = TRUE, na.strings = NA, string
 
 ### What is total number of steps taken per day?
 ```{r, aggregating by date}
+totalstepsbydate <- df1 %>% select(date, steps) %>% group_by(date) %>% summarise_if(is.numeric,sum,na.rm = TRUE)%>%ungroup()
+
 aggregatedTotalStepsByDay <- aggregate(steps~date, df, FUN=sum, na.rm=TRUE, na.action=na.pass)
 ```
 
 ### 1. Make a histogram of the total number of steps taken each day
 
 ```{r, resetting device and making histogram}
+# Using ggplot2
+g <- ggplot(totalstepsbydate, aes(x = date))
+g + geom_bar(aes(weight = steps), stat = "count") + ylab("steps") + xlab("date") + ggtitle('Total steps at various days') 
+
 # Using base Plot
 barplot(height=aggregatedTotalStepsByDay$steps, names.arg=aggregatedTotalStepsByDay$date, xlab="date", ylab=expression('steps'),main=expression('Total steps at various days'))
 ```
 
 ### 2. Calculate and report the mean and median total number of steps taken per day
 ```{r, reporting mean, median}
-aggregatedmeanStepsByDay <- aggregate(steps~date, df, FUN=mean, na.rm=TRUE, na.action=na.pass)
-aggregatedmedianStepsByDay <- aggregate(steps~date, df, FUN=median, na.rm=TRUE, na.action=na.pass)
-stepsByDayMean <- mean(aggregatedTotalStepsByDay$steps)
-stepsByDayMedian <- median(aggregatedTotalStepsByDay$steps)
+meanstepsbydate <- df1 %>% select(date, steps) %>% group_by(date) %>% summarise_if(is.numeric,mean,na.rm = TRUE)%>%ungroup()
+medianstepsbydate <- df1 %>% select(date, steps) %>% group_by(date) %>% summarise_if(is.numeric,median,na.rm = TRUE)%>%ungroup()
+stepsByDayMean <- mean(totalstepsbydate$steps)
+stepsByDayMedian <- median(totalstepsbydate$steps)
 print(paste0("Mean Steps by day is: ", stepsByDayMean))
 cat("Median Steps by day is: ", stepsByDayMedian)
 ```
 
 ## What is the average daily activity pattern?
 ```{r, average daily activity pattern}
-aggregatedTotalStepsByInterval <-  aggregate(steps~interval, df, FUN=mean, na.rm=TRUE, na.action=na.pass)
+average_daily_activity_pattern <- df1 %>% select(steps, interval) %>% group_by(interval) %>% summarise_if(is.numeric,mean,na.rm = TRUE)%>%ungroup()
 ```
 
 ### 1. Make a time series plot
 ```{r, making time series plot}
-# using base plot
-plot(aggregatedTotalStepsByInterval$interval, aggregatedTotalStepsByInterval$steps, type = "l", main = "average_daily_activity_pattern",  xlab = "Interval of Day", ylab = "Mean steps as per interval")
+## ggplot2
+g <- ggplot(average_daily_activity_pattern, aes(x = interval, y = steps))
+g + geom_line() + xlab("Interval of Day") + ylab("Mean steps as per interval") + ggtitle("average_daily_activity_pattern")
+
 ```
 
 ### 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
 ```{r, reporting max steps in 5 minutes interval}
-moststeps <- which.max(aggregatedTotalStepsByInterval$steps)
-timeWhenmoststeps <- paste(as.character(as.integer(aggregatedTotalStepsByInterval[moststeps,'interval']/60)), as.character(aggregatedTotalStepsByInterval[moststeps,'interval'] %% 60), sep = ":")
+moststeps <- which.max(average_daily_activity_pattern$steps)
+timeWhenmoststeps <- paste(as.character(as.integer(average_daily_activity_pattern[moststeps,'interval']/60)), as.character(average_daily_activity_pattern[moststeps,'interval'] %% 60), sep = ":")
 cat("time when max no. of Steps by day is: ", timeWhenmoststeps)
 ```
 
@@ -81,7 +93,7 @@ cat("time when max no. of Steps by day is: ", timeWhenmoststeps)
 ### 1. Calculate and report the total number of missing values in the dataset
 
 ```{r, reporting missing values}
-numMissingValues <- length(which(is.na(df$steps)))
+numMissingValues <- length(which(is.na(df1$steps)))
 cat("number of missing values in Steps by day is: ", numMissingValues)
 ```
 
@@ -91,6 +103,9 @@ To fill NAs we will take the mean of total dataset and put it to replace the NAs
 ### 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
 ```{r, imputing missing values}
+df1Imputed <- df1
+df1Imputed$steps <- impute(df1$steps, fun=mean)
+
 dfImputed <- df
 dfImputed$steps <- impute(df$steps, fun=mean)
 ```
@@ -98,7 +113,14 @@ dfImputed$steps <- impute(df$steps, fun=mean)
 ### 4. Make a histogram of the total number of steps taken each day
 
 ```{r, histogram of steps taken each day}
+totalstepsbydateImputed <- df1Imputed %>% select(date, steps) %>% group_by(date) %>% summarise_if(is.numeric,sum,na.rm = TRUE)%>%ungroup()
+
 aggregatedTotalStepsByDayImputed <- aggregate(steps~date, dfImputed, FUN=sum, na.rm=TRUE, na.action=na.pass)
+
+## ggplot2
+g <- ggplot(totalstepsbydateImputed, aes(x = date))
+g + geom_bar(aes(weight = steps), stat = "count") + ylab("steps") + xlab("date") + ggtitle('Total steps at various days') 
+
 
 # using base plot system
 barplot(height=aggregatedTotalStepsByDayImputed$steps, names.arg=aggregatedTotalStepsByDayImputed$date, xlab="date", ylab=expression('steps'),main=expression('Total steps at various days'))
@@ -106,10 +128,10 @@ barplot(height=aggregatedTotalStepsByDayImputed$steps, names.arg=aggregatedTotal
 
 ### ... and Calculate and report the mean and median total number of steps taken per day.
 ```{r, reporting mean and median}
-aggregatedmeanStepsByDayImputed <- aggregate(steps~date, dfImputed, FUN=mean, na.rm=TRUE, na.action=na.pass)
-aggregatedmedianStepsByDayImpute <- aggregate(steps~date, dfImputed, FUN=median, na.rm=TRUE, na.action=na.pass)
-stepsByDayMeanImputed <- mean(aggregatedTotalStepsByDayImputed$steps)
-stepsByDayMedianImputed <- median(aggregatedTotalStepsByDayImputed$steps)
+meanstepsbydateImputed <- df1Imputed %>% select(date, steps) %>% group_by(date) %>% summarise_if(is.numeric,mean,na.rm = TRUE)%>%ungroup()
+medianstepsbydateImputed <- df1Imputed %>% select(date, steps) %>% group_by(date) %>% summarise_if(is.numeric,median,na.rm = TRUE)%>%ungroup()
+stepsByDayMeanImputed <- mean(totalstepsbydateImputed$steps)
+stepsByDayMedianImputed <- median(totalstepsbydateImputed$steps)
 cat("Mean of imputed Steps by day is: ", stepsByDayMeanImputed)
 cat("Median of imputed Steps by day is: ", stepsByDayMedianImputed)
 ```
@@ -118,23 +140,30 @@ cat("Median of imputed Steps by day is: ", stepsByDayMedianImputed)
 
 ### 1. Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
 ```{r,creating factor label}
-dfImputed$dayType <-  ifelse(as.POSIXlt(dfImputed$date)$wday %in% c(0,6), 'weekend', 'weekday')
+df1Imputed$dayType <-  ifelse(as.POSIXlt(df1Imputed$date)$wday %in% c(0,6), 'weekend', 'weekday')
 ```
 
 ### 2. Make a panel plot containing a time series plot
 
 ```{r, making facet based time series plot}
-aggregatedDataImputed <- aggregate(steps ~ interval + dayType, data=dfImputed, mean)
+aggregatedDataImputed <- df1Imputed %>% group_by(dayType,interval) %>% summarise_if(is.numeric,mean,na.rm = TRUE)%>%ungroup()
 
-# base plot system
-par(mfrow = c(2,1), mar =c(4,4,2,1), oma = c(0,0,0,0))
+# using lattice plot
+xyplot(steps ~ interval | dayType,
+       data = aggregatedDataImputed,
+       layout = c(1, 2),
+       type = "l")
 
-aggregatedTotalStepsByIntervalNWeekday <- subset(aggregatedDataImputed, dayType == "weekday")
-aggregatedTotalStepsByIntervalNWeekend <- subset(aggregatedDataImputed, dayType == "weekend")
-
-plot(aggregatedTotalStepsByIntervalNWeekday$interval, aggregatedTotalStepsByIntervalNWeekday$steps, type = "l", main = "average_daily_activity_pattern by weekdays and interval",  xlab = "Interval of Day", ylab = "Mean steps as per interval", col = "blue")
-
-plot(aggregatedTotalStepsByIntervalNWeekend$interval, aggregatedTotalStepsByIntervalNWeekend$steps, type = "l", main = "average_daily_activity_pattern by weekends and interval",  xlab = "Interval of Day", ylab = "Mean steps as per interval", col = "blue")
-
-dev.off()
+if(FALSE){
+# using ggplot2
+ggplot(aggregatedDataImputed, aes(interval, steps)) + 
+        geom_line(col = "blue") + 
+        facet_grid(dayType ~ .) +
+        xlab("Interval") + 
+        ylab("Number of steps") +
+        ggtitle(" ")+ 
+        theme(panel.background = element_rect(fill = "white"),
+              strip.background = element_rect(colour = "black",
+                                              fill = "antiquewhite1"),
+        axis.line = element_line(colour = "black"))}
 ```

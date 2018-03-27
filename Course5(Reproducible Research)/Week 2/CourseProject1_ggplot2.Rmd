@@ -6,6 +6,7 @@ Reproducible Research: Peer Assessment 1
 library(dplyr)
 library(ggplot2)
 library(stats)
+library(lattice)
 library(Hmisc)
 library(scales)
 ```
@@ -48,8 +49,10 @@ totalstepsbydate <- df1 %>% select(date, steps) %>% group_by(date) %>% summarise
 
 ```{r, resetting device and making histogram}
 # Using ggplot2
+
 g <- ggplot(totalstepsbydate, aes(x = date))
-g + geom_bar(aes(weight = steps), stat = "count") + ylab("steps") + xlab("date") + ggtitle('Total steps at various days') 
+g + geom_bar(aes(weight = steps), stat = "count") + ylab("steps") + xlab("date") + ggtitle('Total steps at various days') + 
+        theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 ```
 
@@ -108,8 +111,10 @@ df1Imputed$steps <- impute(df1$steps, fun=mean)
 totalstepsbydateImputed <- df1Imputed %>% select(date, steps) %>% group_by(date) %>% summarise_if(is.numeric,sum,na.rm = TRUE)%>%ungroup()
 
 ## ggplot2
+
 g <- ggplot(totalstepsbydateImputed, aes(x = date))
-g + geom_bar(aes(weight = steps), stat = "count") + ylab("steps") + xlab("date") + ggtitle('Total steps at various days') 
+g + geom_bar(aes(weight = steps), stat = "count") + ylab("steps") + xlab("date") + ggtitle('Total steps at various days') + 
+        theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 ### ... and Calculate and report the mean and median total number of steps taken per day.
@@ -134,10 +139,24 @@ df1Imputed$dayType <-  ifelse(as.POSIXlt(df1Imputed$date)$wday %in% c(0,6), 'wee
 ```{r, making facet based time series plot}
 aggregatedDataImputed <- df1Imputed %>% group_by(dayType,interval) %>% summarise_if(is.numeric,mean,na.rm = TRUE)%>%ungroup()
 
+# using lattice plot
+xyplot(steps ~ interval | dayType,
+       data = aggregatedDataImputed,
+       layout = c(1, 2),
+       type = "l")
+
+if(FALSE){
+# using ggplot2
 ggplot(aggregatedDataImputed, aes(interval, steps)) + 
-        geom_line() + 
+        geom_line(col = "blue") + 
         facet_grid(dayType ~ .) +
-        xlab("Interval of Day") + 
-        ylab("Mean steps as per interval") +
-        ggtitle("average_daily_activity_pattern by weekdays and interval")
+        xlab("Interval") + 
+        ylab("Number of steps") +
+        ggtitle(" ")+ 
+        theme(panel.background = element_rect(fill = "white"),
+              strip.background = element_rect(colour = "black",
+                                              fill = "antiquewhite1"),
+        axis.line = element_line(colour = "black"))}
+
+dev.off()
 ```
