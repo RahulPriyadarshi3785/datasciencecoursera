@@ -1,0 +1,120 @@
+Hackathon SOlution 1
+================================================================
+        
+```{r, loading_dependant_packages}
+x <- c("dplyr","zoo","xlsx","readxl","bindrcpp","lubridate", "RCurl", "ggplot2")
+lapply(x, require, character.only = TRUE)
+```
+
+
+## Setting up present working directory
+```{r, pwd setting}
+setwd("C:/Users/hp/datasciencecoursera/Course3(Getting and Cleaning Data)")
+```
+
+## Loading and preprocessing the data
+
+### 1. Load the data (i.e. read.csv())
+```{r, loading_data}
+if(!file.exists('TriathalonAnalyticalDataSet.xls')){
+        text=getURL("https://github.com/RahulPriyadarshi3785/datasciencecoursera/blob/master/Course3(Getting%20and%20Cleaning%20Data)/TriathalonAnalyticalDataSet.xls")
+}
+
+df <- tbl_df(read_excel(("TriathalonAnalyticalDataSet.xls"), sheet = 2))
+
+```
+
+### 2. Process/transform the data (if necessary) into a format suitable for your  analysis
+```{r, data_wrangling}
+## df <- tbl_df(my_data)
+str(df)
+```
+
+## Answering Questions:
+
+### 1.Which Day has most completed trips between 1st and 5th Feb?
+```{r}
+q1 <- df %>% select(Date, TRIPS) %>% group_by(Date) %>% summarise_all(funs(sum)) %>% head(5) %>% arrange(TRIPS)
+q1
+```
+
+### 2. What hour of the day has been most completed trips on febrauary 11?
+
+```{r}
+q2 <- df %>% select(Date, Time, TRIPS) %>% filter(Date == as.POSIXlt(as.Date("2017-02-11"))) %>% group_by(Time) %>% summarise_all(funs(sum)) %>% top_n(1)
+q2
+```
+
+### 3. When the No. of unique driver increases so does the number of EYEballs?
+```{r}
+q3 <- df %>% select(Date, EYEBALLS, UNIQUE_DRIVERS) %>% group_by(Date) %>% summarise_all(funs(sum)) %>% arrange(EYEBALLS)
+q3
+```
+
+## 4. Percentage of Eyeballs occured on Friday?
+```{r}
+q4 <- df %>% select(Date, EYEBALLS) %>% mutate(Date = weekdays(Date)) %>% group_by(Date) %>% summarise_all(funs(sum)) %>% mutate(EYEBALLS = EYEBALLS/sum(df[,"EYEBALLS"])*100) %>% filter(Date == "Friday")
+## Using ggplot2
+g <- ggplot(q3, aes(x= EYEBALLS, y= UNIQUE_DRIVERS, type = Date))
+g + geom_line() +
+        xlab("Eyeballs") +
+        ylab("Unique Drivers") +
+        ggtitle('VArying Rate as the no. of Eyeballs increases')
+```
+
+### 5. HOw many hours of data are in datasets?
+```{r}
+q5 <- dim(df)[1]
+q5
+```
+
+### 6. Weighted Request per driver for 1 days datasets?
+```{r}
+q6 <- apply(df[,"REQUESTS"],2, sum)/apply(df[,"UNIQUE_DRIVERS"],2, sum)
+q6
+```
+
+### 7. What hour of day in 15 day in Febrauary had least number of requests?
+
+```{r}
+q7 <- df %>% select(Time, REQUESTS) %>% group_by(Time) %>% summarise_all(funs(sum)) %>% top_n(-1)
+q7
+```
+
+### 8. IF you have 10 drivers in 15 day dataset when will u add them?
+
+```{r}
+q8 <- df %>% select(Time, UNIQUE_DRIVERS) %>% group_by(Time) %>% summarise_all(funs(sum)) %>% top_n(-1)
+q8
+```
+
+### 9. Use data to detemine when the best day time is for drivers?
+
+```{r}
+q9 <- df %>% select(Time, REQUESTS, UNIQUE_DRIVERS) %>% group_by(Time) %>% summarise_all(funs(sum)) %>% mutate(Best_TIme = REQUESTS/UNIQUE_DRIVERS) %>% arrange(Best_TIme) %>% head(1)
+q9
+```
+##YOu need to be careful while analysing data in this question
+
+
+### 10. Name the 72 hours of period with highest an=mouts of zeroes.
+```{r}
+##YOu need to be careful while analysing data in this question
+q10 <- df %>% select(Time, UNIQUE_DRIVERS) %>% filter(UNIQUE_DRIVERS != 0) %>% group_by(Time) %>% summarise(count = n()) %>% tail(15)
+q10
+## Answer is 7 to 10
+```
+
+
+### 11. If 15 days dataset has 8 hours shift then which of the shift has maximum numbers of Requests
+
+```{r}
+q11 <- df %>% select(Time, REQUESTS) %>% group_by(Time) %>% summarise_all(funs(sum)) %>% mutate(val = rollsumr(REQUESTS, k = 8, fill = NA)) %>% filter(row_number()%%8 == 0) %>% top_n(1)
+q11
+```
+
+### 12. On which day the TRIPS/REQUESTS is highest?
+```{r}
+q12 <- df %>% select(Date, TRIPS, REQUESTS) %>% group_by(Date) %>% summarise_all(funs(sum)) %>% mutate(TRIPs_PER_REQUEST = TRIPS/REQUESTS) %>% arrange(TRIPs_PER_REQUEST) %>% tail(1)
+q12
+```

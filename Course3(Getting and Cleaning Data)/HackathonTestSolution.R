@@ -1,14 +1,8 @@
 mySolution_Hackathon <- function(){
         
-        install.packages(c("dplyr","zoo","xlsx","readxl","bindrcpp","lubridate", "RCurl"))
-
-        library(dplyr)
-        library(bindrcpp)
-        library(readxl)
-        library(xlsx)
-        require(RCurl)
-        library(lubridate)
-        library(zoo)
+        x <- c("dplyr","zoo","xlsx","readxl","bindrcpp","lubridate", "RCurl")
+        install.packages(x)
+        lapply(x, require, character.only = TRUE)
         
         df <- tbl_df(read_excel(text=getURL("https://github.com/RahulPriyadarshi3785/datasciencecoursera/blob/master/Course3(Getting%20and%20Cleaning%20Data)/TriathalonAnalyticalDataSet.xls"), sheet = 2))
         
